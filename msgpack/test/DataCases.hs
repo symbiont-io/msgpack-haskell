@@ -76,26 +76,26 @@ instance FromYAML DataCase where
   parseYAML = Y.withMap "DataCase" $ \m -> do
     msgpack <- m .: "msgpack"
 
-    obj <- do { Just (Y.Scalar Y.SNull) <- m .:! "nil" ; pure ObjectNil }
+    obj <- do { Just (Y.Scalar _ Y.SNull) <- m .:! "nil" ; pure ObjectNil }
        <|> do { Just b <- m .:! "bool" ; pure (ObjectBool b) }
        <|> do { Just i <- m .:! "number" ; pure (ObjectInt (fromInteger i)) }
        <|> do { Just s <- m .:! "bignum" ; pure (ObjectInt (read . T.unpack $ s)) }
        <|> do { Just d <- m .:! "number" ; pure (ObjectDouble d) }
        <|> do { Just t <- m .:! "string" ; pure (ObjectStr t) }
        <|> do { Just t <- m .:! "binary" ; pure (ObjectBin (hex2bin t)) }
-       <|> do { Just v@(Y.Sequence _ _) <- m .:! "array"  ; pure (nodeToObj v) }
-       <|> do { Just m'@(Y.Mapping _ _) <- m .:! "map"  ; pure (nodeToObj m') }
+       <|> do { Just v@(Y.Sequence _ _ _) <- m .:! "array"  ; pure (nodeToObj v) }
+       <|> do { Just m'@(Y.Mapping _ _ _) <- m .:! "map"  ; pure (nodeToObj m') }
        <|> do { Just (n,t) <- m .:! "ext"  ; pure (ObjectExt n (hex2bin t)) }
        <|> do { Just (s,ns) <- m .:! "timestamp"; pure (toObject $ mptsFromPosixSeconds2 s ns) }
 
     pure (DataCase { dcMsgPack = map hex2bin msgpack, dcObject = obj })
 
 
-nodeToObj :: Y.Node -> Object
-nodeToObj (Y.Scalar sca)    = scalarToObj sca
-nodeToObj (Y.Sequence _ ns) = ObjectArray (Lst.fromList (map nodeToObj ns))
-nodeToObj (Y.Mapping _ ns)  = ObjectMap   (Lst.fromList $ map (\(k,v) -> (nodeToObj k, nodeToObj v)) $ Map.toList ns)
-nodeToObj (Y.Anchor _ n)    = nodeToObj n
+nodeToObj :: Y.Node Pos -> Object
+nodeToObj (Y.Scalar _ sca)    = scalarToObj sca
+nodeToObj (Y.Sequence _ _ ns) = ObjectArray (Lst.fromList (map nodeToObj ns))
+nodeToObj (Y.Mapping _ _ ns)  = ObjectMap   (Lst.fromList $ map (\(k,v) -> (nodeToObj k, nodeToObj v)) $ Map.toList ns)
+nodeToObj (Y.Anchor _ _ n)    = nodeToObj n
 
 scalarToObj :: Y.Scalar -> Object
 scalarToObj Y.SNull        = ObjectNil

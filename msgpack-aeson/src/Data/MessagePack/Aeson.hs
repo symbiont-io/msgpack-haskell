@@ -25,6 +25,8 @@ import           Control.Arrow
 import           Control.DeepSeq
 import           Control.Exception
 import           Data.Aeson               as A
+import           Data.Aeson.KeyMap        as KM (fromList, toList)
+import           Data.Aeson.Key           as K (toText, fromText, Key)
 import qualified Data.ByteString.Lazy     as L (ByteString)
 import           Data.Data
 import qualified Data.HashMap.Strict      as HM
@@ -50,7 +52,7 @@ toAeson = \case
   ObjectBin b    -> fail $ "ObjectBin is not supported by JSON"
   ObjectArray v  -> Array <$> V.mapM toAeson v
   ObjectMap m    ->
-    A.Object . HM.fromList . V.toList
+    A.Object . KM.fromList . V.toList
       <$> V.mapM (\(k, v) -> (,) <$> from k <*> toAeson v) m
       where from = mpResult fail pure . MP.fromObject
   ObjectExt _ _  -> fail "ObjectExt is not supported by JSON"
@@ -68,7 +70,7 @@ fromAeson = \case
       Right _                           -> fail "number out of bounds"
   String t    -> pure $ ObjectStr t
   Array v     -> ObjectArray <$> traverse fromAeson v
-  A.Object o  -> (ObjectMap . V.fromList) <$> traverse fromEntry (HM.toList o)
+  A.Object o  -> (ObjectMap . V.fromList) <$> traverse fromEntry ((\(k, v) -> (K.toText k, v)) <$> KM.toList o)
     where
       fromEntry (k, v) = (\a -> (ObjectStr k, a)) <$> fromAeson v
 
@@ -110,6 +112,10 @@ instance MessagePack a => FromJSON (AsAeson a) where
   parseJSON j = case fromAeson j of
     MP.Error e   -> fail e
     MP.Success a -> mpResult fail (pure . AsAeson) $ fromObject a
+
+instance MessagePack K.Key where
+  fromObject o = K.fromText <$> fromObject o
+  toObject = toObject . K.toText
 
 -- | Encode to MessagePack via "Data.Aeson"'s 'ToJSON' instances
 packAeson :: ToJSON a => a -> MP.Result L.ByteString

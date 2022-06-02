@@ -1,0 +1,6 @@
+packages: */*.cabal
+
+source-repository-package
+  type: git
+  location: https://github.com/symbiont-io/int-cast.git
+  tag: cf3b8b1f8ef66b5120a65c312168f615b7a131b1
