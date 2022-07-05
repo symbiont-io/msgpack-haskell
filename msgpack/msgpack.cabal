@@ -81,7 +81,7 @@ library
                   , vector               == 0.12.*
                   , deepseq              == 1.4.*
                   , binary               == 0.8.*
-                  , time                 >= 1.9.  && < 2
+                  , time                 >= 1.9   && < 2
                   , int-cast             == 0.3.*
                   , array                == 0.5.*
 
